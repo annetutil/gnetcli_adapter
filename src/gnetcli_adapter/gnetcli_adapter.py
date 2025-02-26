@@ -155,7 +155,7 @@ def run_gnetcli_server(server_path: str, config: str = DEFAULT_GNETCLI_SERVER_CO
     try:
         proc = subprocess.Popen(
             [gnetcli_abs_path, "--conf-file", "-"],
-            stdout=subprocess.PIPE,
+            stdout=subprocess.DEVNULL, # we do not read stdout
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
             bufsize=1,
