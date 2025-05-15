@@ -109,7 +109,7 @@ class AppSettings(BaseSettings):
 async def get_config(breed: str) -> List[str]:
     if breed == "routeros":
         return ["/export verbose", "/user export verbose", "/file print terse detail", "/user ssh-keys print terse"]
-    elif breed.startswith("ios") or breed.startswith("bcom") or breed.startswith("eltex"):
+    elif breed.startswith("ios") or breed.startswith("bcom") or breed.startswith("eltex") or breed.startswith("nxos"):
         return ["show running-config"]
     elif breed.startswith("jun"):
         return ["show configuration"]
