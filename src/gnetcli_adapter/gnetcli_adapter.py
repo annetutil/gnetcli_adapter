@@ -325,7 +325,7 @@ def parse_annet_qa(qa: list[annet.annlib.command.Question]) -> list[QA]:
         q = annet_qa.question
         if annet_qa.is_regexp:
             q = f"/{annet_qa.question}/"
-        res.append(QA(question=q, answer=annet_qa.answer))
+        res.append(QA(question=q, answer=annet_qa.answer, not_send_nl=annet_qa.not_send_nl))
     return res
 
 
