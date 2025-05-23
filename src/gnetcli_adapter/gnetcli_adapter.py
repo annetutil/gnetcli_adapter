@@ -141,6 +141,16 @@ def cleanup():
 atexit.register(cleanup)
 
 
+async def gather_with_concurrency(n: int, *coros: list[asyncio.Task]):
+    semaphore = asyncio.Semaphore(n)
+
+    async def sem_coro(coro):
+        async with semaphore:
+            return await coro
+
+    return await asyncio.gather(*(sem_coro(c) for c in coros))
+
+
 def get_device_ip(dev: Device) -> Optional[str]:
     if isinstance(dev, NetboxDevice):
         if dev.primary_ip:
@@ -379,8 +389,19 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
         if progress_bar:
             for host, cmds in deploy_cmds.items():
                 progress_bar.set_progress(host.fqdn, 0, len(cmds))
+        max_parallel = 1000
+        try:
+            # temporary, for supporting of old annet
+            arg_max_parallel = args.max_parallel
+            if arg_max_parallel > 0:
+                max_parallel = arg_max_parallel
+        except Exception:
+            pass
         deploy_items = deploy_cmds.items()
-        result = await asyncio.gather(*[asyncio.Task(self.deploy(device, cmds, args, progress_bar)) for device, cmds in deploy_items])
+        result = await gather_with_concurrency(
+            max_parallel,
+            *[asyncio.Task(self.deploy(device, cmds, args, progress_bar)) for device, cmds in deploy_items],
+        )
         res = DeployResult(hostnames=[], results={}, durations={}, original_states={})
         res.add_results(results={dev.fqdn: dev_res for (dev, _), dev_res in zip(deploy_items, result)})
         return res
