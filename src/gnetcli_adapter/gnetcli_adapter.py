@@ -402,7 +402,7 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
         deploy_items = deploy_cmds.items()
         result = await gather_with_concurrency(
             max_parallel,
-            *[asyncio.Task(self.deploy(device, cmds, args, progress_bar)) for device, cmds in deploy_items],
+            *[self.deploy(device, cmds, args, progress_bar) for device, cmds in deploy_items],
         )
         res = DeployResult(hostnames=[], results={}, durations={}, original_states={})
         res.add_results(results={dev.fqdn: dev_res for (dev, _), dev_res in zip(deploy_items, result)})
