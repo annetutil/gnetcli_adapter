@@ -142,6 +142,8 @@ atexit.register(cleanup)
 
 
 async def gather_with_concurrency(n: int, *coros: list[asyncio.Task]):
+    if n == 0:
+        return await asyncio.gather(*coros)
     semaphore = asyncio.Semaphore(n)
 
     async def sem_coro(coro):
