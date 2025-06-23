@@ -402,10 +402,13 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
         except Exception:
             pass
         deploy_items = deploy_cmds.items()
-        result = await gather_with_concurrency(
-            max_parallel,
-            *[self.deploy(device, cmds, args, progress_bar) for device, cmds in deploy_items],
-        )
+        if max_parallel == 1:
+            result = await self.serial_deploy(deploy_items, args, progress_bar)
+        else:
+            result = await gather_with_concurrency(
+                max_parallel,
+                *[self.deploy(device, cmds, args, progress_bar) for device, cmds in deploy_items],
+            )
         res = DeployResult(hostnames=[], results={}, durations={}, original_states={})
         res.add_results(results={dev.fqdn: dev_res for (dev, _), dev_res in zip(deploy_items, result)})
         return res
@@ -441,6 +444,22 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
         if self.logs_dir:
             tracker.add_tracker(FileProgressTracker(device, self.logs_dir))
         return tracker
+
+    async def serial_deploy(self, deploy_items, args, progress_bar: ProgressBar | None = None):
+        res = {}
+        for device, cmds in deploy_items:
+            if progress_bar:
+                try:
+                    # hack, no way to do this using interface ProgressBar
+                    for no, fqdn in enumerate(progress_bar.tiles_params):
+                        if fqdn == device.fqdn:
+                            progress_bar._set_active_tile(no)
+                            break
+                except Exception:
+                    pass
+            dev_res = await self.deploy(device, cmds, args, progress_bar)
+            res[device] = dev_res
+        return res
 
     async def deploy(
             self,
