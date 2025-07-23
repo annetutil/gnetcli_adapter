@@ -32,6 +32,14 @@ import threading
 import atexit
 import shutil
 import os.path
+try:
+    from builtins import (  # type: ignore[attr-defined, unused-ignore]
+        ExceptionGroup,
+    )
+except ImportError:
+    from exceptiongroup import (  # type: ignore[no-redef, import-not-found, unused-ignore]
+        ExceptionGroup,
+    )
 
 breed_to_device = {
     "routeros": "ros",
@@ -467,7 +475,7 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
             cmds: CommandList,
             args: DeployOptions,
             progress_bar: ProgressBar | None = None,
-    ) -> tuple[list[Exception], list[pb.CMDResult]]:
+    ) -> Exception | None:
         gnetcli_device = breed_to_device.get(device.breed, device.breed)
         ip = get_device_ip(device)
         host_params = HostParams(
@@ -506,7 +514,10 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
                 tracker.finish_err(f"Seen {len(seen_exc)} exceptions")
             else:
                 tracker.finish_ok("All done")
-            return seen_exc, results
+
+            if seen_exc:
+                return ExceptionGroup("Deploy failed with exceptions", seen_exc)
+            return None
 
     async def _deploy(
             self,
