@@ -168,6 +168,16 @@ def get_device_ip(dev: Device) -> Optional[str]:
         for iface in dev.interfaces:
             for ip in iface.ip_addresses:
                 return ip.address.split("/")[0]
+    else:
+        try:
+            if dev.primary_ip:
+                return dev.primary_ip.address.split("/")[0]
+            if dev.interfaces:
+                for iface in dev.interfaces:
+                    for ip in iface.ip_addresses:
+                        return ip.address.split("/")[0]
+        except Exception as e:
+            _logger.warning("get device ip error: %s", e)
     return None
 
 
