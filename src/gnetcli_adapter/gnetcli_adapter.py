@@ -153,14 +153,14 @@ atexit.register(cleanup)
 
 async def gather_with_concurrency(n: int, *coros: list[asyncio.Task]):
     if n == 0:
-        return await asyncio.gather(*coros)
+        return await asyncio.gather(*coros, return_exceptions=True)
     semaphore = asyncio.Semaphore(n)
 
     async def sem_coro(coro):
         async with semaphore:
             return await coro
 
-    return await asyncio.gather(*(sem_coro(c) for c in coros))
+    return await asyncio.gather(*(sem_coro(c) for c in coros), return_exceptions=True)
 
 
 def get_device_ip(dev: Device) -> Optional[str]:
