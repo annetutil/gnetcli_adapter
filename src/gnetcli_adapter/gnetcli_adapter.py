@@ -143,8 +143,10 @@ def check_gnetcli_server(server_path: str, config: str = DEFAULT_GNETCLI_SERVER_
 
 def cleanup():
     if _local_gnetcli_p is not None:
+        _local_gnetcli_p.terminate()
+        time.sleep(0.05)
         _local_gnetcli_p.kill()
-
+        time.sleep(0.05)
 
 atexit.register(cleanup)
 
