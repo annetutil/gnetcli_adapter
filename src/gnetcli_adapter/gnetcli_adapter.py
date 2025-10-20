@@ -303,7 +303,7 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
         dev_password: Optional[str] = None,
         ssh_agent_enabled: bool = True,
         server_path: Optional[str] = None,
-        server_conf: Optional[str] = DEFAULT_GNETCLI_SERVER_CONF,
+        server_conf: Optional[Config] = DEFAULT_GNETCLI_SERVER_CONF,
         logs_dir: Optional[str] = None,
     ):
         conf_args = {
