@@ -188,7 +188,7 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
         processes: int = 1,
         max_slots: int = 0,
     ):
-        if not devices or not files_to_download:
+        if not devices:
             return {}, {}
         async with make_api(self.conf) as api:
             return await self._fetch(api, devices, files_to_download, processes, max_slots)
