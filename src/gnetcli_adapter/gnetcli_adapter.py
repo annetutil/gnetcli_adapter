@@ -18,7 +18,7 @@ from annet.connectors import AdapterWithConfig, AdapterWithName
 from annet.storage import Device
 from gnetclisdk.config import Config
 from gnetclisdk.starter import DEFAULT_GNETCLI_SERVER_CONF, GnetcliStarter
-from gnetclisdk.client import Credentials, Gnetcli, HostParams, QA, File, GnetcliSessionCmd
+from gnetclisdk.client import Credentials, Gnetcli, HostParams, QA, File
 from gnetclisdk.exceptions import EOFError
 import gnetclisdk.proto.server_pb2 as pb
 from pydantic import Field, field_validator, FieldValidationInfo
@@ -188,6 +188,8 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
         processes: int = 1,
         max_slots: int = 0,
     ):
+        if not devices or not files_to_download:
+            return {}, {}
         async with make_api(self.conf) as api:
             return await self._fetch(api, devices, files_to_download, processes, max_slots)
 
@@ -331,6 +333,8 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
         args: DeployOptions,
         progress_bar: ProgressBar | None = None,
     ) -> DeployResult:
+        if not deploy_cmds:
+            return DeployResult(hostnames=[], results={}, durations={}, original_states={})
         async with make_api(self.conf) as api:
             return await self._bulk_deploy(
                 api=api,
