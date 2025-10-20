@@ -188,7 +188,7 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
         processes: int = 1,
         max_slots: int = 0,
     ):
-        if not devices or not files_to_download:
+        if not devices:
             return {}, {}
         async with make_api(self.conf) as api:
             return await self._fetch(api, devices, files_to_download, processes, max_slots)
@@ -303,7 +303,7 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
         dev_password: Optional[str] = None,
         ssh_agent_enabled: bool = True,
         server_path: Optional[str] = None,
-        server_conf: Optional[str] = DEFAULT_GNETCLI_SERVER_CONF,
+        server_conf: Optional[Config] = DEFAULT_GNETCLI_SERVER_CONF,
         logs_dir: Optional[str] = None,
     ):
         conf_args = {
