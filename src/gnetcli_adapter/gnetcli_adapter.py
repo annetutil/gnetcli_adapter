@@ -69,7 +69,15 @@ class AppSettings(BaseSettings):
     password: Optional[str] = None
     dev_login: Optional[str] = None
     dev_password: Optional[str] = None
+    dev_port: Optional[int] = None
+    streamer_type: Optional[str] = None  # "ssh" or "telnet"
     ssh_agent_enabled: bool = True
+
+    def get_streamer_type(self):
+        """Convert string streamer_type to proto enum value"""
+        if self.streamer_type == "telnet":
+            return pb.StreamerType.StreamerType_telnet
+        return pb.StreamerType.StreamerType_ssh
 
     def make_dev_credentials(self) -> Optional[Credentials]:
         if not self.dev_login and not self.dev_password:
@@ -151,6 +159,8 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
         password: Optional[str] = None,
         dev_login: Optional[str] = None,
         dev_password: Optional[str] = None,
+        dev_port: Optional[int] = None,
+        streamer_type: Optional[str] = None,
         ssh_agent_enabled: bool = True,
         server_path: Optional[str] = None,
         server_conf: Config = DEFAULT_GNETCLI_SERVER_CONF,
@@ -160,6 +170,8 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
             "password": password,
             "dev_login": dev_login,
             "dev_password": dev_password,
+            "dev_port": dev_port,
+            "streamer_type": streamer_type,
             "server_path": server_path,
             "url": url,
             "server_conf": server_conf,
@@ -247,6 +259,8 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
                     credentials=self.conf.make_dev_credentials(),
                     device=gnetcli_device,
                     ip=ip,
+                    port=self.conf.dev_port,
+                    streamer_type=self.conf.get_streamer_type(),
                 ),
             )
             if res.status != 0:
@@ -264,6 +278,8 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
                 credentials=self.conf.make_dev_credentials(),
                 device=gnetcli_device,
                 ip=ip,
+                port=self.conf.dev_port,
+                streamer_type=self.conf.get_streamer_type(),
             ),
         )
         res: Dict[str, str] = {}
@@ -301,6 +317,8 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
         password: Optional[str] = None,
         dev_login: Optional[str] = None,
         dev_password: Optional[str] = None,
+        dev_port: Optional[int] = None,
+        streamer_type: Optional[str] = None,
         ssh_agent_enabled: bool = True,
         server_path: Optional[str] = None,
         server_conf: Optional[Config] = DEFAULT_GNETCLI_SERVER_CONF,
@@ -311,6 +329,8 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
             "password": password,
             "dev_login": dev_login,
             "dev_password": dev_password,
+            "dev_port": dev_port,
+            "streamer_type": streamer_type,
             "server_path": server_path,
             "url": url,
             "server_conf": server_conf,
@@ -447,6 +467,8 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
             credentials=self.conf.make_dev_credentials(),
             device=gnetcli_device,
             ip=ip,
+            port=self.conf.dev_port,
+            streamer_type=self.conf.get_streamer_type(),
         )
         command_groups: list[tuple[str, CommandList]]= []
         if isinstance(cmds, dict): # PC
