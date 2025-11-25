@@ -1,3 +1,4 @@
+import abc
 import traceback
 
 import asyncio
@@ -142,8 +143,21 @@ def get_device_ip(dev: Device) -> Optional[str]:
             _logger.warning("get device ip error: %s", e)
     return None
 
+class ApiMaker(metaclass=abc.ABCMeta):
+    conf: AppSettings
 
-class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
+    @asynccontextmanager
+    async def make_api(self) -> AsyncIterator[Gnetcli]:
+        async with GnetcliStarter(self.conf.server_path, self.conf.server_conf) as gnetcli_url:
+            yield Gnetcli(
+                server=gnetcli_url,
+                auth_token=self.conf.make_server_credentials(),
+                insecure_grpc=self.conf.insecure_grpc,
+                user_agent="annet",
+            )
+
+
+class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName, ApiMaker):
     def __init__(
         self,
         url: Optional[str] = None,
@@ -190,7 +204,7 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName):
     ):
         if not devices:
             return {}, {}
-        async with make_api(self.conf) as api:
+        async with self.make_api() as api:
             return await self._fetch(api, devices, files_to_download, processes, max_slots)
 
     async def _fetch(
@@ -282,18 +296,7 @@ def parse_annet_qa(qa: list[annet.annlib.command.Question]) -> list[QA]:
     return res
 
 
-@asynccontextmanager
-async def make_api(conf: AppSettings) -> AsyncIterator[Gnetcli]:
-    async with GnetcliStarter(conf.server_path, conf.server_conf) as gnetcli_url:
-        yield Gnetcli(
-            server=gnetcli_url,
-            auth_token= conf.make_server_credentials(),
-            insecure_grpc=conf.insecure_grpc,
-            user_agent="annet",
-        )
-
-
-class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
+class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker):
     def __init__(
         self,
         url: Optional[str] = None,
@@ -335,7 +338,7 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName):
     ) -> DeployResult:
         if not deploy_cmds:
             return DeployResult(hostnames=[], results={}, durations={}, original_states={})
-        async with make_api(self.conf) as api:
+        async with self.make_api() as api:
             return await self._bulk_deploy(
                 api=api,
                 deploy_cmds=deploy_cmds,
