@@ -516,6 +516,7 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker
                         res = await session.cmd(
                             cmd=cmd.cmd,
                             cmd_timeout=cmd.timeout,
+                            read_timeout=cmd.read_timeout,
                             host_params=host_params,
                             qa=parse_annet_qa(cmd.questions or []),
                             trace=True,
