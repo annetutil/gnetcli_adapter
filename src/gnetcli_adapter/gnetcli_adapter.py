@@ -41,6 +41,7 @@ except ImportError:
 
 breed_to_device = {
     "routeros": "ros",
+    "routeros7": "ros7",
     "ios12": "cisco",
     "bcom-os": "bcomos",
     "pc": "pc",
@@ -99,8 +100,10 @@ class AppSettings(BaseSettings):
 
 
 async def get_config(breed: str) -> List[str]:
-    if breed == "routeros":
-        return ["/export verbose", "/user export verbose", "/file print terse detail", "/user ssh-keys print terse"]
+    if breed == "routeros7":
+        return ["/export show-sensitive", "/user export verbose show-sensitive", "/file print terse detail", "/user ssh-keys print terse"]
+    elif breed == "routeros":
+        return ["/export", "/user export verbose", "/file print terse detail", "/user ssh-keys print terse"]
     elif breed.startswith("ios") or breed.startswith("bcom") or breed.startswith("eltex") or breed.startswith("nxos"):
         return ["show running-config"]
     elif breed.startswith("jun"):
