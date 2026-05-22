@@ -153,13 +153,20 @@ class ApiMaker(metaclass=abc.ABCMeta):
 
     @asynccontextmanager
     async def make_api(self) -> AsyncIterator[Gnetcli]:
-        async with GnetcliStarter(self.conf.server_path, self.conf.server_conf) as gnetcli_url:
-            yield Gnetcli(
-                server=gnetcli_url,
+        def _client(server_url: str) -> Gnetcli:
+            return Gnetcli(
+                server=server_url,
                 auth_token=self.conf.make_server_credentials(),
                 insecure_grpc=self.conf.insecure_grpc,
                 user_agent="annet",
             )
+
+        if self.conf.url:
+            yield _client(self.conf.url)
+            return
+
+        async with GnetcliStarter(self.conf.server_path, self.conf.server_conf) as gnetcli_url:
+            yield _client(gnetcli_url)
 
 
 class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName, ApiMaker):
