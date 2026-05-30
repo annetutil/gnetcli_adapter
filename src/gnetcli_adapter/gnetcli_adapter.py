@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 import logging
 from typing import Any, Dict, List, Optional, Tuple
+import getpass
 
 import annet.annlib.command
 
@@ -76,6 +77,9 @@ class AppSettings(BaseSettings):
     def make_dev_credentials(self) -> Optional[Credentials]:
         if not self.dev_login and not self.dev_password:
             return None
+        if self.dev_login == 'ask_for_login' and self.dev_password == 'ask_for_password':
+            self.dev_login = input('Login: ')
+            self.dev_password = getpass.getpass('Password: ')
         return Credentials(self.dev_login, self.dev_password)
 
     def make_server_credentials(self) -> Optional[str]:
