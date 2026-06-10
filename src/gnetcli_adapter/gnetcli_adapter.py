@@ -52,6 +52,7 @@ breed_to_device = {
     "h3c": "h3c",
     "vrp85": "huawei",
     "vrp55": "huawei",
+    "ipn": "sitonica",
 }
 
 
@@ -110,7 +111,7 @@ async def get_config(breed: str) -> List[str]:
         return ["show configuration"]
     elif breed.startswith("eos4"):
         return ["show running-config | no-more"]
-    elif breed.startswith(("h3c", "vrp")):
+    elif breed.startswith(("h3c", "vrp", "ipn")):
         return ["display current-configuration"]
     elif breed.startswith("aruos"):
         return ["show ap-env", "show running-config no-encrypt"]
