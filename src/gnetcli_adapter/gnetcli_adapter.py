@@ -370,6 +370,7 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker
         args: DeployOptions,
         progress_bar: ProgressBar | None = None,
     ) -> DeployResult:
+        dev_credentials = self.conf.make_dev_credentials()
         if progress_bar:
             for host, cmds in deploy_cmds.items():
                 progress_bar.set_progress(host.fqdn, 0, len(cmds))
@@ -387,7 +388,7 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker
         else:
             result = await gather_with_concurrency(
                 max_parallel,
-                *[self.deploy(api, device, cmds, args, progress_bar) for device, cmds in deploy_items],
+                *[self.deploy(api, device, cmds, args, progress_bar, dev_credentials) for device, cmds in deploy_items],
             )
         res = DeployResult(hostnames=[], results={}, durations={}, original_states={})
         res.add_results(results={dev.fqdn: dev_res for (dev, _), dev_res in zip(deploy_items, result)})
@@ -460,11 +461,12 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker
         cmds: CommandList,
         args: DeployOptions,
         progress_bar: ProgressBar | None = None,
+        dev_credentials: Credentials | None = None,
     ) -> Exception | None:
         gnetcli_device = breed_to_device.get(device.breed, device.breed)
         ip = get_device_ip(device)
         host_params = HostParams(
-            credentials=self.conf.make_dev_credentials(),
+            credentials=dev_credentials,
             device=gnetcli_device,
             ip=ip,
         )
