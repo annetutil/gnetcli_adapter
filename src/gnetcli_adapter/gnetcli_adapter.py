@@ -77,9 +77,12 @@ class AppSettings(BaseSettings):
 
     def get_streamer_type(self):
         """Convert string streamer_type to proto enum value"""
-        if self.streamer_type == "telnet":
+        if self.streamer_type is None or self.streamer_type == "ssh":
+            return pb.StreamerType.StreamerType_ssh
+        elif self.streamer_type == "telnet":
             return pb.StreamerType.StreamerType_telnet
-        return pb.StreamerType.StreamerType_ssh
+        else:
+            raise ValueError(f"Invalid streamer_type: {self.streamer_type}. Must be None, 'ssh', or 'telnet'")
 
     def make_dev_credentials(self) -> Optional[Credentials]:
         if not self.dev_login and not self.dev_password:
