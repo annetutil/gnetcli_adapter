@@ -43,6 +43,30 @@ Host mybastion
 
 `~/.annet/context.yml` the same because gnetcli read .ssh/config by default.
 
+## Enforcing minimum command timeouts
+
+`min_cmd_timeout` and `min_read_timeout` set lower bounds, in seconds, for
+timeouts sent to `gnetcli_server`. Values configured on individual Annet
+commands are preserved when they are larger.
+
+```yaml
+fetcher:
+  default:
+    adapter: gnetcli
+    params: &gnetcli
+      min_cmd_timeout: 120
+      min_read_timeout: 60
+deployer:
+  default:
+    adapter: gnetcli
+    params:
+      <<: *gnetcli
+```
+
+With this configuration, a command timeout of 30 seconds is raised to 120,
+while a command timeout of 180 seconds remains unchanged. Omit either setting
+to leave that timeout unchanged.
+
 ## Connecting to an externally-running gnetcli_server
 
 If `gnetcli_server` is already running on a bastion host, set `url` and the

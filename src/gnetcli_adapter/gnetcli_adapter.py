@@ -75,6 +75,8 @@ class AppSettings(BaseSettings):
     dev_password: Optional[str] = None
     dev_port: Optional[int] = Field(default=None, ge=1, le=65535)
     streamer_type: Optional[Literal["ssh", "telnet"]] = None
+    min_cmd_timeout: Optional[float] = Field(default=None, gt=0)
+    min_read_timeout: Optional[float] = Field(default=None, gt=0)
     ssh_agent_enabled: bool = True
 
     def make_dev_credentials(self) -> Optional[Credentials]:
@@ -107,6 +109,20 @@ class AppSettings(BaseSettings):
             port=self.dev_port,
             streamer_type=streamer_type,
         )
+
+    @staticmethod
+    def apply_min_timeout(timeout: Optional[float], minimum: Optional[float]) -> Optional[float]:
+        if minimum is None:
+            return timeout
+        if timeout is None or timeout == 0:
+            return minimum
+        return max(timeout, minimum)
+
+    def make_cmd_timeout(self, timeout: Optional[float]) -> Optional[float]:
+        return self.apply_min_timeout(timeout, self.min_cmd_timeout)
+
+    def make_read_timeout(self, timeout: Optional[float]) -> Optional[float]:
+        return self.apply_min_timeout(timeout, self.min_read_timeout)
 
     @field_validator("*", mode="before")
     @classmethod
@@ -203,6 +219,8 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName, ApiMaker):
         dev_password: Optional[str] = None,
         dev_port: Optional[int] = None,
         streamer_type: Optional[Literal["ssh", "telnet"]] = None,
+        min_cmd_timeout: Optional[float] = None,
+        min_read_timeout: Optional[float] = None,
         ssh_agent_enabled: bool = True,
         server_path: Optional[str] = None,
         server_conf: Config = DEFAULT_GNETCLI_SERVER_CONF,
@@ -214,6 +232,8 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName, ApiMaker):
             "dev_password": dev_password,
             "dev_port": dev_port,
             "streamer_type": streamer_type,
+            "min_cmd_timeout": min_cmd_timeout,
+            "min_read_timeout": min_read_timeout,
             "server_path": server_path,
             "url": url,
             "server_conf": server_conf,
@@ -297,6 +317,8 @@ class GnetcliFetcher(Fetcher, AdapterWithConfig, AdapterWithName, ApiMaker):
             res = await api.cmd(
                 hostname=device.fqdn,
                 cmd=cmd,
+                cmd_timeout=self.conf.make_cmd_timeout(None),
+                read_timeout=self.conf.make_read_timeout(None),
                 host_params=self.conf.make_host_params(
                     credentials=self.conf.make_dev_credentials(), device=gnetcli_device, ip=ip
                 ),
@@ -348,6 +370,8 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker
         dev_password: Optional[str] = None,
         dev_port: Optional[int] = None,
         streamer_type: Optional[Literal["ssh", "telnet"]] = None,
+        min_cmd_timeout: Optional[float] = None,
+        min_read_timeout: Optional[float] = None,
         ssh_agent_enabled: bool = True,
         server_path: Optional[str] = None,
         server_conf: Optional[Config] = DEFAULT_GNETCLI_SERVER_CONF,
@@ -360,6 +384,8 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker
             "dev_password": dev_password,
             "dev_port": dev_port,
             "streamer_type": streamer_type,
+            "min_cmd_timeout": min_cmd_timeout,
+            "min_read_timeout": min_read_timeout,
             "server_path": server_path,
             "url": url,
             "server_conf": server_conf,
@@ -559,8 +585,8 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker
                     try:
                         res = await session.cmd(
                             cmd=cmd.cmd,
-                            cmd_timeout=cmd.timeout,
-                            read_timeout=cmd.read_timeout,
+                            cmd_timeout=self.conf.make_cmd_timeout(cmd.timeout),
+                            read_timeout=self.conf.make_read_timeout(cmd.read_timeout),
                             host_params=host_params,
                             qa=parse_annet_qa(cmd.questions or []),
                             trace=True,

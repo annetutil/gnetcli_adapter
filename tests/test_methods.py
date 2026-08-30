@@ -69,6 +69,23 @@ def test_fetch_propagates_port_and_streamer_type(streamer_type, dev_port, expect
     assert host_params.streamer_type == expected_streamer_type
 
 
+def test_fetch_applies_minimum_timeouts():
+    fetcher = GnetcliFetcher(
+        url="127.0.0.1:50050",
+        min_cmd_timeout=120,
+        min_read_timeout=60,
+    )
+    device = SimpleNamespace(breed="jun10", fqdn="router.example.net", primary_ip=None, interfaces=[])
+    api = Mock()
+    api.cmd = AsyncMock(return_value=pb.CMDResult(status=0, out=b"config"))
+
+    result = asyncio.run(fetcher.afetch_dev(api=api, device=device))
+
+    assert result == "config"
+    assert api.cmd.await_args.kwargs["cmd_timeout"] == 120
+    assert api.cmd.await_args.kwargs["read_timeout"] == 60
+
+
 def test_deploy_propagates_port_and_streamer_type():
     deployer = GnetcliDeployer(
         url="127.0.0.1:50050",
@@ -93,12 +110,59 @@ def test_deploy_propagates_port_and_streamer_type():
     assert host_params.streamer_type == pb.StreamerType_telnet
 
 
+def test_deploy_applies_minimum_timeouts_without_lowering_larger_values():
+    deployer = GnetcliDeployer(
+        url="127.0.0.1:50050",
+        min_cmd_timeout=120,
+        min_read_timeout=60,
+    )
+    session = Mock()
+    session.cmd = AsyncMock(
+        side_effect=[
+            pb.CMDResult(status=0, out=b"first"),
+            pb.CMDResult(status=0, out=b"second"),
+        ]
+    )
+
+    @asynccontextmanager
+    async def cmd_session(**_kwargs):
+        yield session
+
+    api = Mock()
+    api.cmd_session = cmd_session
+    commands = CommandList(
+        [
+            Command("short timeout", timeout=30, read_timeout=10),
+            Command("long timeout", timeout=180, read_timeout=90),
+        ]
+    )
+
+    seen_exc, _ = asyncio.run(
+        deployer._deploy(
+            api=api,
+            device=Mock(fqdn="device.example.net"),
+            host_params=HostParams(device="cisco"),
+            command_groups=[("Run command", commands)],
+            files={},
+            tracker=Mock(),
+        )
+    )
+
+    assert seen_exc == []
+    assert [(call.kwargs["cmd_timeout"], call.kwargs["read_timeout"]) for call in session.cmd.await_args_list] == [
+        (120, 60),
+        (180, 90),
+    ]
+
+
 @pytest.mark.parametrize(
     "params",
     [
         {"dev_port": 0},
         {"dev_port": 65536},
         {"streamer_type": "console"},
+        {"min_cmd_timeout": 0},
+        {"min_read_timeout": -1},
     ],
 )
 def test_rejects_invalid_connection_params(params):
