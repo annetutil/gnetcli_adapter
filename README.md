@@ -93,3 +93,9 @@ deployer:
 
 When `url` is unset, the adapter starts a local `gnetcli_server` subprocess
 (`server_path` defaults to `gnetcli_server` on `$PATH`).
+
+The default `insecure_grpc: true` means the external-server example does not
+use TLS. Basic authentication over plaintext is only appropriate on a trusted
+local/tunnelled connection. Do not expose it directly to an untrusted network.
+For local key-only server credentials, omit both `dev_login` and `dev_password`;
+explicit per-device credentials override the server defaults.
