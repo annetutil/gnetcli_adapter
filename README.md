@@ -30,7 +30,7 @@ selected_context: default
 
 https://en.wikibooks.org/wiki/OpenSSH/Cookbook/Multiplexing
 
-cat ~/.ssh/context.yml
+cat ~/.ssh/config
 ```
 Host myhost*
     ProxyJump mybastion
