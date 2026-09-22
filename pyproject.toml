@@ -6,7 +6,7 @@ build-backend = "flit_core.buildapi"
 name =  "gnetcli_adapter"
 dependencies = [
   "exceptiongroup>=1.1.3; python_version<'3.11'",
-  "annet>=3.2.0",
+  "annet>=4.6.9",
   "gnetclisdk>=1.3.5",
   "pydantic_settings",
   "pydantic"
