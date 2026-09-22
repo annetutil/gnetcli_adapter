@@ -606,6 +606,9 @@ class GnetcliDeployer(DeployDriver, AdapterWithConfig, AdapterWithName, ApiMaker
                     if res.status == 0:
                         tracker.command_done_ok(res)
                         results.append(res)
+                        delay_after = getattr(cmd, "delay_after", 0.0)
+                        if delay_after > 0:
+                            await asyncio.sleep(delay_after)
                     else:
                         error = res.error.decode(errors="replace")
                         if cmd.suppress_errors or cmd.suppress_nonzero:
